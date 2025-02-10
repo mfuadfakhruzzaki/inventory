@@ -1,0 +1,38 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "020803"
+      POSTGRES_DB: "inventory"
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d inventory"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  migrate:
+    image: migrate/migrate:v4.15.2
+    command: -path=/migrations -database "postgres://postgres:020803@db:5432/inventory?sslmode=disable" up
+    volumes:
+      - ./migrations:/migrations
+    depends_on:
+      db:
+        condition: service_healthy
+
+  app:
+    build: .
+    depends_on:
+      - db
+      - migrate
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_DSN=postgres://postgres:020803@db:5432/inventory?sslmode=disable
+
+volumes:
+  db-data:

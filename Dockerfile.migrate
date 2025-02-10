@@ -1,0 +1,13 @@
+# Gunakan image golang untuk proses build
+FROM golang:1.23-alpine AS builder
+WORKDIR /app
+# Instal git (jika belum ada)
+RUN apk add --no-cache git
+# Download dan build migrate dengan tag 'postgres'
+RUN go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+
+# Gunakan image alpine sebagai image final
+FROM alpine:latest
+# Copy binary migrate yang sudah dibangun ke image final
+COPY --from=builder /go/bin/migrate /usr/local/bin/migrate
+ENTRYPOINT ["migrate"]
